@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f1b2d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MathGame">
+<title>Math Adventure!</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   BASE
+═══════════════════════════════════════════ */
+:root {
+  --bg:#0f1b2d; --card:#162033; --card2:#1e2d45;
+  --a1:#f7c948; --a2:#ff6b6b; --a3:#4ecdc4; --a4:#a78bfa;
+  --text:#f0f4ff; --muted:#7a8baa;
+  --ok:#4ade80; --no:#f87171;
+  --gold:#ffd700; --silver:#c0c8d8; --bronze:#cd7f32;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bot: env(safe-area-inset-bottom, 0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overscroll-behavior:none;}
+body{
+  font-family:'Nunito',sans-serif;
+  background:var(--bg);color:var(--text);
+  display:flex;flex-direction:column;align-items:center;
+  overflow-x:hidden; overflow-y:auto;
+  padding-top:var(--safe-top);
+  padding-bottom:var(--safe-bot);
+}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    radial-gradient(1px 1px at 10% 20%,rgba(255,255,255,.4) 0%,transparent 100%),
+    radial-gradient(1px 1px at 30% 60%,rgba(255,255,255,.3) 0%,transparent 100%),
+    radial-gradient(1px 1px at 50% 10%,rgba(255,255,255,.5) 0%,transparent 100%),
+    radial-gradient(1px 1px at 70% 80%,rgba(255,255,255,.3) 0%,transparent 100%),
+    radial-gradient(1px 1px at 85% 35%,rgba(255,255,255,.4) 0%,transparent 100%),
+    radial-gradient(1px 1px at 20% 85%,rgba(255,255,255,.2) 0%,transparent 100%),
+    radial-gradient(1px 1px at 60% 45%,rgba(255,255,255,.3) 0%,transparent 100%),
+    radial-gradient(1px 1px at 92% 70%,rgba(255,255,255,.4) 0%,transparent 100%),
+    radial-gradient(1px 1px at 40% 30%,rgba(255,255,255,.2) 0%,transparent 100%),
+    radial-gradient(1px 1px at 75% 15%,rgba(255,255,255,.3) 0%,transparent 100%);
+}
+
+/* ═══════════════════════════════════════════
+   SCREENS
+═══════════════════════════════════════════ */
+.screen{
+  position:relative;z-index:1;
+  width:100%;max-width:560px;
+  padding:16px 16px 32px;
+  display:none;flex-direction:column;align-items:center;gap:16px;
+  min-height:100vh;
+}
+.screen.active{display:flex;}
+
+/* ═══════════════════════════════════════════
+   TOP NAV
+═══════════════════════════════════════════ */
+.top-nav{
+  width:100%;display:flex;align-items:center;justify-content:space-between;
+  padding:4px 0 8px;
+}
+.nav-title{font-family:'Fredoka One',cursive;font-size:1.4rem;
+  background:linear-gradient(135deg,var(--a1),var(--a2),var(--a4));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.icon-btn{
+  width:44px;height:44px;border-radius:14px;border:none;
+  background:var(--card2);color:var(--muted);font-size:1.2rem;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:transform .15s,background .15s;
+}
+.icon-btn:hover{transform:scale(1.08);background:rgba(255,255,255,.1);}
+
+/* ═══════════════════════════════════════════
+   HEADER (game screen)
+═══════════════════════════════════════════ */
+header{text-align:center;width:100%;}
+header h1{
+  font-family:'Fredoka One',cursive;
+  font-size:clamp(1.8rem,7vw,2.8rem);
+  background:linear-gradient(135deg,var(--a1) 0%,var(--a2) 50%,var(--a4) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 20px rgba(247,201,72,.3));
+}
+header p{color:var(--muted);font-size:.88rem;font-weight:600;margin-top:3px;}
+
+/* ═══════════════════════════════════════════
+   SETTINGS ROWS
+═══════════════════════════════════════════ */
+.settings-row{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%;}
+.section-label{font-size:.66rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);}
+
+.ops-panel{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+.op-btn{
+  width:56px;height:56px;border-radius:15px;border:3px solid transparent;
+  font-family:'Fredoka One',cursive;font-size:1.4rem;cursor:pointer;
+  transition:transform .15s,box-shadow .15s;background:var(--card2);color:var(--muted);
+  display:flex;align-items:center;justify-content:center;outline:none;
+}
+.op-btn:hover{transform:scale(1.08);}
+.op-btn.active[data-op="+"]{border-color:#f7c948;color:#f7c948;box-shadow:0 0 18px rgba(247,201,72,.4);background:rgba(247,201,72,.12);}
+.op-btn.active[data-op="-"]{border-color:#ff6b6b;color:#ff6b6b;box-shadow:0 0 18px rgba(255,107,107,.4);background:rgba(255,107,107,.12);}
+.op-btn.active[data-op="x"]{border-color:#4ecdc4;color:#4ecdc4;box-shadow:0 0 18px rgba(78,205,196,.4);background:rgba(78,205,196,.12);}
+.op-btn.active[data-op="/"]{border-color:#a78bfa;color:#a78bfa;box-shadow:0 0 18px rgba(167,139,250,.4);background:rgba(167,139,250,.12);}
+
+.diff-panel{display:flex;gap:6px;background:var(--card2);border-radius:12px;padding:4px;}
+.diff-btn{
+  padding:7px 14px;border-radius:9px;border:none;
+  font-family:'Nunito',sans-serif;font-weight:800;font-size:.8rem;
+  cursor:pointer;background:transparent;color:var(--muted);transition:all .2s;
+}
+.diff-btn.active{background:var(--a4);color:#fff;box-shadow:0 4px 12px rgba(167,139,250,.4);}
+
+/* ═══════════════════════════════════════════
+   ROUND BAR
+═══════════════════════════════════════════ */
+.round-bar{
+  width:100%;background:var(--card);border-radius:18px;
+  padding:10px 16px;display:flex;align-items:center;
+  justify-content:space-between;border:1px solid rgba(255,255,255,.06);gap:10px;
+}
+.round-info{font-family:'Fredoka One',cursive;font-size:.95rem;color:var(--a3);white-space:nowrap;}
+.round-dots{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;flex:1;}
+.dot{
+  width:20px;height:20px;border-radius:50%;
+  background:var(--card2);border:2px solid rgba(255,255,255,.1);
+  transition:all .3s;display:flex;align-items:center;justify-content:center;font-size:.55rem;
+}
+.dot.ok {background:var(--ok);border-color:var(--ok);box-shadow:0 0 7px rgba(74,222,128,.5);}
+.dot.bad{background:var(--no);border-color:var(--no);}
+.dot.cur{border-color:var(--a3);box-shadow:0 0 9px rgba(78,205,196,.5);animation:pulse 1.2s infinite;}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
+
+/* ═══════════════════════════════════════════
+   TIMER BAR
+═══════════════════════════════════════════ */
+.timer-wrap{width:100%;height:6px;background:var(--card2);border-radius:99px;overflow:hidden;}
+.timer-bar{height:100%;width:100%;background:linear-gradient(90deg,var(--a3),var(--a4));border-radius:99px;transition:width .5s linear,background .5s;}
+.timer-bar.warn{background:linear-gradient(90deg,var(--a1),var(--a2));}
+
+/* ═══════════════════════════════════════════
+   SCOREBOARD
+═══════════════════════════════════════════ */
+.scoreboard{display:flex;gap:10px;width:100%;}
+.score-card{flex:1;background:var(--card);border-radius:16px;padding:12px;text-align:center;border:1px solid rgba(255,255,255,.06);}
+.score-lbl{font-size:.6rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:3px;}
+.score-val{font-family:'Fredoka One',cursive;font-size:1.7rem;line-height:1;}
+.score-val.s{color:var(--a1);} .score-val.c{color:var(--ok);} .score-val.w{color:var(--a2);}
+
+/* ═══════════════════════════════════════════
+   QUESTION CARD
+═══════════════════════════════════════════ */
+.qcard{
+  width:100%;background:var(--card);border-radius:26px;
+  padding:28px 20px 22px;border:1px solid rgba(255,255,255,.06);
+  box-shadow:0 20px 60px rgba(0,0,0,.4);
+  display:flex;flex-direction:column;align-items:center;gap:20px;
+  position:relative;overflow:hidden;transition:transform .25s;
+}
+.qcard::before{
+  content:'';position:absolute;top:-40px;right:-40px;
+  width:150px;height:150px;border-radius:50%;
+  background:var(--gc,rgba(247,201,72,.07));transition:background .4s;
+}
+.qdisplay{font-family:'Fredoka One',cursive;font-size:clamp(2.4rem,8vw,3.8rem);text-align:center;line-height:1.15;letter-spacing:2px;}
+.qnum{color:var(--text);}
+.qop{color:var(--oc,#f7c948);filter:drop-shadow(0 0 8px var(--oc,#f7c948));}
+.qeq{color:var(--muted);}
+.qblank{display:inline-block;min-width:70px;border-bottom:4px solid var(--oc,#f7c948);color:var(--oc,#f7c948);}
+
+.agrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;width:100%;}
+.abtn{
+  padding:15px 8px;border-radius:15px;border:2px solid rgba(255,255,255,.08);
+  background:var(--card2);color:var(--text);
+  font-family:'Fredoka One',cursive;font-size:1.45rem;
+  cursor:pointer;transition:transform .15s,background .15s,border-color .15s;outline:none;
+}
+.abtn:hover:not(:disabled){transform:translateY(-3px);background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);}
+.abtn.ok-a{background:rgba(74,222,128,.2);border-color:var(--ok);color:var(--ok);box-shadow:0 0 22px rgba(74,222,128,.4);animation:pop .4s ease;}
+.abtn.no-a{background:rgba(248,113,113,.2);border-color:var(--no);color:var(--no);animation:shk .4s ease;}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.1)}100%{transform:scale(1)}}
+@keyframes shk{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}60%{transform:translateX(7px)}}
+
+.fb{font-family:'Fredoka One',cursive;font-size:1.3rem;min-height:1.8rem;text-align:center;opacity:0;transform:scale(.8);transition:all .2s;}
+.fb.show{opacity:1;transform:scale(1);}
+.fb.g{color:var(--ok);} .fb.b{color:var(--no);}
+
+.next-btn{
+  padding:12px 32px;border-radius:99px;border:none;
+  font-family:'Fredoka One',cursive;font-size:1.05rem;cursor:pointer;
+  background:linear-gradient(135deg,var(--a3),var(--a4));color:#fff;
+  box-shadow:0 5px 18px rgba(78,205,196,.3);transition:transform .15s;display:none;
+}
+.next-btn:hover{transform:scale(1.04);}
+.next-btn.vis{display:inline-block;animation:fiu .3s ease;}
+@keyframes fiu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ═══════════════════════════════════════════
+   TROPHY CABINET
+═══════════════════════════════════════════ */
+.cabinet{width:100%;background:var(--card);border-radius:22px;padding:18px;border:1px solid rgba(255,255,255,.06);}
+.cab-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.cab-title{font-family:'Fredoka One',cursive;font-size:1.05rem;color:var(--a1);}
+.clr-btn{font-size:.68rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted);background:none;border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:3px 9px;cursor:pointer;transition:all .2s;}
+.clr-btn:hover{color:var(--no);border-color:var(--no);}
+.tcounts{display:flex;gap:10px;}
+.titem{flex:1;background:var(--card2);border-radius:14px;padding:12px 6px;text-align:center;border:1px solid rgba(255,255,255,.04);}
+.temoji{font-size:1.8rem;line-height:1;margin-bottom:3px;display:block;}
+.tcount{font-family:'Fredoka One',cursive;font-size:1.5rem;line-height:1;}
+.tcount.g{color:var(--gold);} .tcount.s{color:var(--silver);} .tcount.b{color:var(--bronze);}
+.tlbl{font-size:.6rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-top:2px;}
+.thist{margin-top:12px;display:flex;flex-wrap:wrap;gap:5px;max-height:100px;overflow-y:auto;}
+.tbadge{padding:3px 9px;border-radius:99px;font-size:.74rem;font-weight:700;display:flex;align-items:center;gap:3px;}
+.tbadge.g{background:rgba(255,215,0,.15);color:var(--gold);border:1px solid rgba(255,215,0,.3);}
+.tbadge.s{background:rgba(192,200,216,.15);color:var(--silver);border:1px solid rgba(192,200,216,.3);}
+.tbadge.b{background:rgba(205,127,50,.15);color:var(--bronze);border:1px solid rgba(205,127,50,.3);}
+.tempty{color:var(--muted);font-size:.82rem;font-weight:600;width:100%;text-align:center;padding:10px 0;}
+
+/* ═══════════════════════════════════════════
+   ROUND END OVERLAY
+═══════════════════════════════════════════ */
+.overlay{
+  position:fixed;inset:0;z-index:200;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(8,14,26,.88);backdrop-filter:blur(10px);
+  opacity:0;pointer-events:none;transition:opacity .4s;
+}
+.overlay.show{opacity:1;pointer-events:all;}
+.rcard{
+  background:var(--card);border-radius:30px;padding:36px 30px;
+  text-align:center;max-width:360px;width:92%;
+  border:1px solid rgba(255,255,255,.1);box-shadow:0 30px 80px rgba(0,0,0,.7);
+  position:relative;overflow:hidden;
+  transform:scale(.8) translateY(28px);
+  transition:transform .4s cubic-bezier(0.34,1.56,.64,1);
+}
+.overlay.show .rcard{transform:scale(1) translateY(0);}
+.rcard::before{content:'';position:absolute;inset:0;background:var(--mg,transparent);pointer-events:none;border-radius:30px;}
+.micon{font-size:5.5rem;line-height:1;display:block;margin-bottom:6px;filter:drop-shadow(0 0 28px var(--mc,#ffd700));animation:mbounce .6s .3s cubic-bezier(0.34,1.56,.64,1) both;}
+@keyframes mbounce{from{transform:scale(0) rotate(-20deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}
+.rtitle{font-family:'Fredoka One',cursive;font-size:1.9rem;color:var(--mc,#ffd700);text-shadow:0 0 18px var(--mc,#ffd700);margin-bottom:5px;}
+.rsub{color:var(--muted);font-size:.85rem;font-weight:700;margin-bottom:16px;}
+.rstats{display:flex;gap:12px;justify-content:center;margin-bottom:20px;}
+.rst{background:var(--card2);border-radius:12px;padding:10px 14px;min-width:72px;}
+.rst-v{font-family:'Fredoka One',cursive;font-size:1.5rem;line-height:1;}
+.rst-l{font-size:.6rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-top:2px;}
+.tg-status{font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:14px;min-height:1.2rem;}
+.tg-status.sent{color:var(--ok);}
+.tg-status.err{color:var(--a2);}
+.play-btn{
+  padding:13px 40px;border-radius:99px;border:none;
+  font-family:'Fredoka One',cursive;font-size:1.15rem;cursor:pointer;
+  color:#0f1b2d;box-shadow:0 7px 22px rgba(0,0,0,.4);transition:transform .15s;font-weight:900;
+}
+.play-btn:hover{transform:scale(1.05);}
+.no-r .micon{filter:grayscale(1) drop-shadow(0 0 8px rgba(255,255,255,.1));}
+.no-r .rtitle{color:var(--muted);text-shadow:none;}
+
+/* ═══════════════════════════════════════════
+   SETTINGS SCREEN
+═══════════════════════════════════════════ */
+.settings-screen{gap:14px;}
+.scard{width:100%;background:var(--card);border-radius:22px;padding:20px;border:1px solid rgba(255,255,255,.06);}
+.scard-title{font-family:'Fredoka One',cursive;font-size:1.05rem;color:var(--a4);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+.field:last-child{margin-bottom:0;}
+.field label{font-size:.68rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);}
+.field input,.field textarea{
+  background:var(--card2);border:1.5px solid rgba(255,255,255,.1);
+  border-radius:12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:600;
+  padding:11px 14px;outline:none;transition:border-color .2s;width:100%;
+  -webkit-appearance:none;
+}
+.field input:focus,.field textarea:focus{border-color:var(--a4);}
+.field input::placeholder,.field textarea::placeholder{color:var(--muted);}
+.field textarea{resize:vertical;min-height:80px;}
+.field-hint{font-size:.72rem;color:var(--muted);font-weight:600;margin-top:2px;}
+
+.save-btn{
+  width:100%;padding:14px;border-radius:16px;border:none;
+  font-family:'Fredoka One',cursive;font-size:1.1rem;cursor:pointer;
+  background:linear-gradient(135deg,var(--a4),var(--a3));color:#fff;
+  box-shadow:0 6px 20px rgba(167,139,250,.3);transition:transform .15s,opacity .15s;
+}
+.save-btn:hover{transform:scale(1.02);}
+.save-btn:active{opacity:.8;}
+.save-msg{text-align:center;font-weight:800;font-size:.85rem;min-height:1.2rem;transition:opacity .3s;}
+.save-msg.ok{color:var(--ok);}  .save-msg.fail{color:var(--no);}
+
+.test-btn{
+  width:100%;padding:11px;border-radius:14px;border:1.5px solid var(--a3);
+  font-family:'Fredoka One',cursive;font-size:1rem;cursor:pointer;
+  background:transparent;color:var(--a3);transition:all .2s;margin-top:8px;
+}
+.test-btn:hover{background:rgba(78,205,196,.1);}
+
+.tg-info-box{
+  background:rgba(78,205,196,.07);border:1px solid rgba(78,205,196,.2);
+  border-radius:14px;padding:14px;font-size:.8rem;font-weight:600;
+  color:var(--muted);line-height:1.6;
+}
+.tg-info-box a{color:var(--a3);text-decoration:none;}
+.tg-info-box strong{color:var(--text);}
+
+/* ═══════════════════════════════════════════
+   BURST
+═══════════════════════════════════════════ */
+.burst{position:fixed;pointer-events:none;font-size:2rem;z-index:999;animation:bfly 1s ease-out forwards;}
+@keyframes bfly{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.4)}}
+
+/* install banner */
+.install-banner{
+  width:100%;background:linear-gradient(135deg,rgba(78,205,196,.15),rgba(167,139,250,.15));
+  border:1px solid rgba(78,205,196,.25);border-radius:16px;
+  padding:12px 16px;display:flex;align-items:center;gap:12px;
+}
+.install-banner p{font-size:.8rem;font-weight:700;color:var(--text);flex:1;line-height:1.4;}
+.install-banner button{
+  padding:7px 14px;border-radius:10px;border:none;
+  background:linear-gradient(135deg,var(--a3),var(--a4));color:#fff;
+  font-family:'Fredoka One',cursive;font-size:.85rem;cursor:pointer;white-space:nowrap;
+}
+
+@media(max-width:380px){
+  .abtn{font-size:1.2rem;padding:12px 6px;}
+  .qdisplay{font-size:2rem;}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ GAME SCREEN ═══════════ -->
+<div class="screen active" id="screen-game">
+
+  <div class="top-nav">
+    <div class="nav-title">🚀 Math Adventure</div>
+    <button class="icon-btn" onclick="showSettings()" title="Settings">⚙️</button>
+  </div>
+
+  <div id="install-banner" class="install-banner" style="display:none;">
+    <p>📲 Install as app for the best experience!</p>
+    <button onclick="installApp()">Install</button>
+  </div>
+
+  <div class="settings-row">
+    <span class="section-label">Operation</span>
+    <div class="ops-panel">
+      <button class="op-btn active" data-op="+" >+</button>
+      <button class="op-btn" data-op="-">−</button>
+      <button class="op-btn" data-op="x">×</button>
+      <button class="op-btn" data-op="/">÷</button>
+    </div>
+  </div>
+
+  <div class="settings-row">
+    <span class="section-label">Difficulty</span>
+    <div class="diff-panel">
+      <button class="diff-btn active" data-diff="easy">⭐ Easy</button>
+      <button class="diff-btn" data-diff="medium">⭐⭐ Med</button>
+      <button class="diff-btn" data-diff="hard">⭐⭐⭐ Hard</button>
+    </div>
+  </div>
+
+  <div class="round-bar">
+    <div class="round-info" id="round-info">Round 1 · 1/10</div>
+    <div class="round-dots" id="round-dots"></div>
+  </div>
+
+  <div class="timer-wrap"><div class="timer-bar" id="timer-bar"></div></div>
+
+  <div class="scoreboard">
+    <div class="score-card"><div class="score-lbl">🔥 Streak</div><div class="score-val s" id="streak">0</div></div>
+    <div class="score-card"><div class="score-lbl">✅ Right</div><div class="score-val c" id="sc-ok">0</div></div>
+    <div class="score-card"><div class="score-lbl">❌ Wrong</div><div class="score-val w" id="sc-no">0</div></div>
+  </div>
+
+  <div class="qcard" id="qcard">
+    <div class="qdisplay">
+      <span class="qnum" id="q-a">?</span>
+      <span class="qop"  id="q-op">+</span>
+      <span class="qnum" id="q-b">?</span>
+      <span class="qeq"> = </span>
+      <span class="qblank" id="q-blank">?</span>
+    </div>
+    <div class="agrid" id="agrid"></div>
+    <div class="fb" id="fb"></div>
+    <button class="next-btn" id="next-btn" onclick="nextQ()">Next →</button>
+  </div>
+
+  <div class="cabinet">
+    <div class="cab-head">
+      <span class="cab-title">🏆 Trophy Cabinet</span>
+      <button class="clr-btn" onclick="clearTrophies()">Clear</button>
+    </div>
+    <div class="tcounts">
+      <div class="titem"><span class="temoji">🥇</span><div class="tcount g" id="cg">0</div><div class="tlbl">Gold</div></div>
+      <div class="titem"><span class="temoji">🥈</span><div class="tcount s" id="cs">0</div><div class="tlbl">Silver</div></div>
+      <div class="titem"><span class="temoji">🥉</span><div class="tcount b" id="cb">0</div><div class="tlbl">Bronze</div></div>
+    </div>
+    <div class="thist" id="thist"></div>
+  </div>
+</div>
+
+<!-- ═══════════ ROUND END OVERLAY ═══════════ -->
+<div class="overlay" id="overlay">
+  <div class="rcard" id="rcard">
+    <span class="micon" id="micon">🥇</span>
+    <div class="rtitle" id="rtitle">Gold Medal!</div>
+    <div class="rsub"   id="rsub">Amazing!</div>
+    <div class="rstats">
+      <div class="rst"><div class="rst-v" id="r-ok"  style="color:var(--ok)">0</div><div class="rst-l">Correct</div></div>
+      <div class="rst"><div class="rst-v" id="r-no"  style="color:var(--no)">0</div><div class="rst-l">Wrong</div></div>
+      <div class="rst"><div class="rst-v" id="r-pct" style="color:var(--a1)">0%</div><div class="rst-l">Score</div></div>
+      <div class="rst"><div class="rst-v" id="r-time"style="color:var(--a3)">0s</div><div class="rst-l">Time</div></div>
+    </div>
+    <div class="tg-status" id="tg-status"></div>
+    <button class="play-btn" id="play-btn" onclick="newRound()">Play Again! 🚀</button>
+  </div>
+</div>
+
+<!-- ═══════════ SETTINGS SCREEN ═══════════ -->
+<div class="screen settings-screen" id="screen-settings">
+  <div class="top-nav">
+    <button class="icon-btn" onclick="showGame()">←</button>
+    <div class="nav-title">⚙️ Settings</div>
+    <div style="width:44px"></div>
+  </div>
+
+  <!-- Kid profile -->
+  <div class="scard">
+    <div class="scard-title">👤 Kid Profile</div>
+    <div class="field">
+      <label>Kid's Name</label>
+      <input id="cfg-name" type="text" placeholder="e.g. Alex" maxlength="30">
+    </div>
+    <div class="field">
+      <label>Round Size</label>
+      <input id="cfg-round" type="number" placeholder="10" min="5" max="30" value="10">
+      <span class="field-hint">Number of questions per round (5–30)</span>
+    </div>
+  </div>
+
+  <!-- Telegram -->
+  <div class="scard">
+    <div class="scard-title">✈️ Telegram Notifications</div>
+
+    <div class="tg-info-box">
+      <strong>How to set up:</strong><br>
+      1. Create a bot via <a href="https://t.me/BotFather" target="_blank">@BotFather</a> → get <strong>Bot Token</strong><br>
+      2. Add the bot to your group/chat<br>
+      3. Get Chat ID: send a message then visit<br>
+      <code style="font-size:.75rem;color:var(--a3)">api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</code><br>
+      4. For personal chat: message <a href="https://t.me/userinfobot" target="_blank">@userinfobot</a>
+    </div>
+
+    <div class="field" style="margin-top:12px;">
+      <label>Bot Token</label>
+      <input id="cfg-token" type="text" placeholder="123456789:AABBccDDee..." autocomplete="off">
+    </div>
+    <div class="field">
+      <label>Chat IDs (one per line)</label>
+      <textarea id="cfg-chats" placeholder="-1001234567890&#10;987654321&#10;-1009876543210"></textarea>
+      <span class="field-hint">Personal chats: positive number. Groups: negative number (starts with -100…)</span>
+    </div>
+
+    <button class="test-btn" onclick="testTelegram()">📨 Send Test Message</button>
+    <div class="save-msg" id="test-msg"></div>
+  </div>
+
+  <button class="save-btn" onclick="saveSettings()">💾 Save Settings</button>
+  <div class="save-msg" id="save-msg"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// CONFIG & CONSTANTS
+// ═══════════════════════════════════════════
+const STORE = 'mathpwa_v3';
+const GOOD  = ["🎉 Amazing!","⭐ Correct!","🔥 On Fire!","💡 Smart!","🚀 Nailed it!","👏 Brilliant!","🌟 Perfect!"];
+const BAD   = ["😅 Not quite!","🤔 Almost!","💪 Keep going!","🙈 Oops!","📚 Try again!"];
+
+const MEDALS = {
+  gold:  {icon:'🥇',label:'Gold Medal!',  sub:'Incredible! 90%+ correct!',     color:'#ffd700',glow:'rgba(255,215,0,.12)',  bg:'linear-gradient(135deg,#ffd700,#ffaa00)',pct:90},
+  silver:{icon:'🥈',label:'Silver Medal!',sub:'Great job! 70–89% correct!',    color:'#c0c8d8',glow:'rgba(192,200,216,.12)',bg:'linear-gradient(135deg,#c0c8d8,#8899bb)',pct:70},
+  bronze:{icon:'🥉',label:'Bronze Medal!',sub:'Good effort! 50–69% correct!',  color:'#cd7f32',glow:'rgba(205,127,50,.12)', bg:'linear-gradient(135deg,#cd7f32,#a05a10)',pct:50},
+  none:  {icon:'💪',label:'Keep Trying!', sub:'Under 50% — you can do better!',color:'#7a8baa',glow:'transparent',           bg:'linear-gradient(135deg,#4ecdc4,#a78bfa)', pct:0},
+};
+
+const OP_COL = {'+':'#f7c948','-':'#ff6b6b','x':'#4ecdc4','/':'#a78bfa'};
+const OP_GLW = {'+':'rgba(247,201,72,.07)','-':'rgba(255,107,107,.07)','x':'rgba(78,205,196,.07)','/':'rgba(167,139,250,.07)'};
+const OP_SYM = {'+':'+','-':'−','x':'×','/':'÷'};
+const OP_LBL = {'+':'Addition','-':'Subtraction','x':'Multiplication','/':'Division'};
+
+const DIFF = {
+  easy:  {add:[1,10], sub:[1,10], mul:[1,5],  div:[1,5] },
+  medium:{add:[5,20], sub:[5,20], mul:[2,10], div:[2,10]},
+  hard:  {add:[10,50],sub:[10,50],mul:[5,12], div:[2,12]},
+};
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let CFG = {name:'', token:'', chats:'', roundSize:10};
+let T   = {gold:0,silver:0,bronze:0,history:[]};
+
+let S = {
+  op:'+', diff:'easy',
+  answer:0, answered:false, streak:0,
+  roundNum:1, roundOk:0, roundNo:0, roundIdx:0, roundResults:[],
+  totalOk:0, totalNo:0,
+  roundStart:0, questionStart:0,
+  roundSize:10,
+};
+
+let timerInterval = null;
+
+// ═══════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════
+function loadAll(){
+  try {
+    const d = JSON.parse(localStorage.getItem(STORE)||'{}');
+    if(d.cfg) CFG = {...CFG,...d.cfg};
+    if(d.trophies) T = {...T,...d.trophies};
+  } catch{}
+  S.roundSize = parseInt(CFG.roundSize)||10;
+}
+
+function saveAll(){
+  try{ localStorage.setItem(STORE, JSON.stringify({cfg:CFG, trophies:T})); }catch{}
+}
+
+// ═══════════════════════════════════════════
+// SETTINGS SCREEN
+// ═══════════════════════════════════════════
+function showSettings(){
+  document.getElementById('cfg-name').value  = CFG.name||'';
+  document.getElementById('cfg-round').value = CFG.roundSize||10;
+  document.getElementById('cfg-token').value = CFG.token||'';
+  document.getElementById('cfg-chats').value = CFG.chats||'';
+  document.getElementById('save-msg').textContent='';
+  document.getElementById('test-msg').textContent='';
+  document.getElementById('screen-game').classList.remove('active');
+  document.getElementById('screen-settings').classList.add('active');
+}
+
+function showGame(){
+  document.getElementById('screen-settings').classList.remove('active');
+  document.getElementById('screen-game').classList.add('active');
+}
+
+function saveSettings(){
+  CFG.name      = document.getElementById('cfg-name').value.trim();
+  CFG.roundSize = Math.min(30, Math.max(5, parseInt(document.getElementById('cfg-round').value)||10));
+  CFG.token     = document.getElementById('cfg-token').value.trim();
+  CFG.chats     = document.getElementById('cfg-chats').value.trim();
+  S.roundSize   = CFG.roundSize;
+  saveAll();
+  const m = document.getElementById('save-msg');
+  m.textContent='✅ Saved!'; m.className='save-msg ok';
+  setTimeout(()=>m.textContent='',2500);
+}
+
+async function testTelegram(){
+  const token  = document.getElementById('cfg-token').value.trim();
+  const chats  = document.getElementById('cfg-chats').value.trim();
+  const m      = document.getElementById('test-msg');
+  if(!token||!chats){m.textContent='⚠️ Fill in Token and at least one Chat ID';m.className='save-msg fail';return;}
+  m.textContent='Sending…';m.className='save-msg';
+  const name   = document.getElementById('cfg-name').value.trim()||'your kid';
+  const ids    = chats.split('\n').map(s=>s.trim()).filter(Boolean);
+  const text   = `🧪 *Test message*\nMath Adventure is set up for *${name}*! Round results will appear here after each game. 🚀`;
+  const results = await sendTelegram(token, ids, text);
+  if(results.every(r=>r)) {m.textContent=`✅ Sent to ${ids.length} chat(s)!`;m.className='save-msg ok';}
+  else {m.textContent=`❌ Failed for some chats. Check token/IDs.`;m.className='save-msg fail';}
+  setTimeout(()=>m.textContent='',4000);
+}
+
+// ═══════════════════════════════════════════
+// TELEGRAM
+// ═══════════════════════════════════════════
+async function sendTelegram(token, chatIds, text){
+  return Promise.all(chatIds.map(async id=>{
+    try{
+      const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({chat_id:id, text, parse_mode:'Markdown'})
+      });
+      const d = await r.json();
+      return d.ok;
+    }catch{ return false; }
+  }));
+}
+
+async function sendRoundResult(pct, medalKey, roundOk, roundNo, roundSize, elapsedSec, op, diff){
+  if(!CFG.token||!CFG.chats) return false;
+  const ids   = CFG.chats.split('\n').map(s=>s.trim()).filter(Boolean);
+  if(!ids.length) return false;
+
+  const m     = MEDALS[medalKey];
+  const name  = CFG.name||'Your kid';
+  const medal = medalKey==='none'?'No medal this time 💪':m.icon+' '+m.label;
+  const mins  = Math.floor(elapsedSec/60);
+  const secs  = elapsedSec%60;
+  const timeStr = mins>0?`${mins}m ${secs}s`:`${secs}s`;
+  const stars = pct>=90?'⭐⭐⭐':pct>=70?'⭐⭐':pct>=50?'⭐':'';
+
+  const text =
+`🎓 *${name}'s Math Round Result* ${stars}
+
+🏅 *Medal:* ${medal}
+📊 *Score:* ${roundOk}/${roundSize} correct (${pct}%)
+✅ Right: ${roundOk}  ❌ Wrong: ${roundNo}
+⏱ *Time:* ${timeStr}
+🔢 *Operation:* ${OP_LBL[op]}
+📈 *Difficulty:* ${diff.charAt(0).toUpperCase()+diff.slice(1)}
+🔁 *Round:* #${S.roundNum}`;
+
+  const results = await sendTelegram(CFG.token, ids, text);
+  return results.some(r=>r);
+}
+
+// ═══════════════════════════════════════════
+// MATH
+// ═══════════════════════════════════════════
+const rand = (a,b) => Math.floor(Math.random()*(b-a+1))+a;
+
+function makeQ(){
+  const r=DIFF[S.diff];
+  let a,b,ans;
+  if(S.op==='+'){ a=rand(...r.add);b=rand(...r.add);ans=a+b;}
+  else if(S.op==='-'){a=rand(...r.sub);b=rand(...r.sub);if(b>a)[a,b]=[b,a];ans=a-b;}
+  else if(S.op==='x'){a=rand(...r.mul);b=rand(...r.mul);ans=a*b;}
+  else{b=rand(...r.div);ans=rand(...r.div);a=ans*b;}
+  return{a,b,ans};
+}
+
+function makeChoices(ans){
+  const set=new Set([ans]);
+  const sp=ans<=5?4:ans<=20?8:15;
+  let t=0;
+  while(set.size<4&&t<100){t++;let w=ans+rand(-sp,sp);if(S.op==='/'||S.op==='x')w=Math.max(0,w);if(w!==ans&&w>=0)set.add(w);}
+  return[...set].sort(()=>Math.random()-.5);
+}
+
+function getMedal(pct){
+  if(pct>=90)return'gold';if(pct>=70)return'silver';if(pct>=50)return'bronze';return'none';
+}
+
+// ═══════════════════════════════════════════
+// TIMER
+// ═══════════════════════════════════════════
+function startQuestionTimer(){
+  S.questionStart = Date.now();
+  clearInterval(timerInterval);
+  const bar = document.getElementById('timer-bar');
+  const TOTAL = 15000; // 15s per question
+  bar.style.transition='none';
+  bar.style.width='100%';
+  bar.className='timer-bar';
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      bar.style.transition=`width ${TOTAL}ms linear`;
+      bar.style.width='0%';
+    });
+  });
+  timerInterval = setInterval(()=>{
+    const elapsed = Date.now()-S.questionStart;
+    const left = 1 - elapsed/TOTAL;
+    if(left<0.3) bar.className='timer-bar warn';
+  }, 500);
+}
+
+function stopTimer(){
+  clearInterval(timerInterval);
+  const bar=document.getElementById('timer-bar');
+  const elapsed=Date.now()-S.questionStart;
+  const pct = Math.max(0, 1-elapsed/15000)*100;
+  bar.style.transition='none';
+  bar.style.width=pct+'%';
+}
+
+// ═══════════════════════════════════════════
+// DOTS
+// ═══════════════════════════════════════════
+function renderDots(){
+  const w=document.getElementById('round-dots');
+  w.innerHTML='';
+  for(let i=0;i<S.roundSize;i++){
+    const d=document.createElement('div');
+    d.className='dot';
+    if(i<S.roundIdx){d.classList.add(S.roundResults[i]?'ok':'bad');d.textContent=S.roundResults[i]?'✓':'✗';}
+    else if(i===S.roundIdx)d.classList.add('cur');
+    w.appendChild(d);
+  }
+  document.getElementById('round-info').textContent=`Round ${S.roundNum} · ${S.roundIdx+1}/${S.roundSize}`;
+}
+
+// ═══════════════════════════════════════════
+// RENDER QUESTION
+// ═══════════════════════════════════════════
+function renderQ(){
+  const{a,b,ans}=makeQ();
+  S.answer=ans; S.answered=false;
+  const c=OP_COL[S.op];
+  document.documentElement.style.setProperty('--oc',c);
+  document.getElementById('qcard').style.setProperty('--gc',OP_GLW[S.op]);
+  document.getElementById('q-a').textContent=a;
+  document.getElementById('q-op').textContent=OP_SYM[S.op];
+  document.getElementById('q-op').style.color=c;
+  document.getElementById('q-b').textContent=b;
+  document.getElementById('q-blank').textContent='?';
+  document.getElementById('q-blank').style.borderBottomColor=c;
+  document.getElementById('q-blank').style.color=c;
+
+  const grid=document.getElementById('agrid');
+  grid.innerHTML='';
+  makeChoices(ans).forEach(ch=>{
+    const btn=document.createElement('button');
+    btn.className='abtn'; btn.textContent=ch;
+    btn.onclick=()=>checkAns(ch,btn);
+    grid.appendChild(btn);
+  });
+
+  document.getElementById('fb').textContent='';
+  document.getElementById('fb').className='fb';
+  document.getElementById('next-btn').classList.remove('vis');
+  renderDots();
+  startQuestionTimer();
+}
+
+// ═══════════════════════════════════════════
+// CHECK ANSWER
+// ═══════════════════════════════════════════
+function checkAns(choice, btn){
+  if(S.answered)return;
+  S.answered=true;
+  stopTimer();
+  document.querySelectorAll('.abtn').forEach(b=>b.disabled=true);
+
+  const ok=choice===S.answer;
+  const fb=document.getElementById('fb');
+
+  if(ok){
+    btn.classList.add('ok-a');
+    S.streak++; S.roundOk++; S.totalOk++;
+    fb.textContent=GOOD[Math.floor(Math.random()*GOOD.length)];
+    fb.className='fb g show';
+    burstFrom(btn,['⭐','✨','🎉','💫','🌟']);
+  }else{
+    btn.classList.add('no-a');
+    S.streak=0; S.roundNo++; S.totalNo++;
+    fb.textContent=BAD[Math.floor(Math.random()*BAD.length)];
+    fb.className='fb b show';
+    document.querySelectorAll('.abtn').forEach(b=>{if(Number(b.textContent)===S.answer)b.classList.add('ok-a');});
+  }
+
+  document.getElementById('q-blank').textContent=S.answer;
+  S.roundResults.push(ok);
+  S.roundIdx++;
+  updateScore();
+  renderDots();
+
+  if(S.roundIdx>=S.roundSize) setTimeout(showRoundEnd, 900);
+  else document.getElementById('next-btn').classList.add('vis');
+}
+
+function updateScore(){
+  document.getElementById('streak').textContent=S.streak;
+  document.getElementById('sc-ok').textContent=S.totalOk;
+  document.getElementById('sc-no').textContent=S.totalNo;
+}
+
+// ═══════════════════════════════════════════
+// ROUND END
+// ═══════════════════════════════════════════
+async function showRoundEnd(){
+  const elapsed = Math.round((Date.now()-S.roundStart)/1000);
+  const pct     = Math.round((S.roundOk/S.roundSize)*100);
+  const key     = getMedal(pct);
+  const m       = MEDALS[key];
+
+  document.getElementById('micon').textContent  = m.icon;
+  document.getElementById('rtitle').textContent = m.label;
+  document.getElementById('rsub').textContent   = m.sub;
+  document.getElementById('r-ok').textContent   = S.roundOk;
+  document.getElementById('r-no').textContent   = S.roundNo;
+  document.getElementById('r-pct').textContent  = pct+'%';
+  document.getElementById('r-time').textContent = elapsed+'s';
+  document.getElementById('play-btn').style.background = m.bg;
+  document.getElementById('play-btn').style.color = key==='none'?'#fff':'#0f1b2d';
+
+  const rc=document.getElementById('rcard');
+  rc.style.setProperty('--mc',m.color);
+  rc.style.setProperty('--mg',m.glow);
+  rc.className='rcard'+(key==='none'?' no-r':'');
+
+  // Save trophy
+  if(key!=='none'){
+    T[key]++;
+    T.history.unshift({medal:key,op:S.op,diff:S.diff,pct,round:S.roundNum,time:elapsed});
+    if(T.history.length>40)T.history=T.history.slice(0,40);
+    saveAll();
+    renderCabinet();
+    setTimeout(()=>burstCenter(key==='gold'?['🥇','⭐','🎉','✨','💫','🌟','🏆']:key==='silver'?['🥈','⭐','✨','💫','🎊']:['🥉','💪','⭐','✨'],12),400);
+  }
+
+  document.getElementById('overlay').classList.add('show');
+
+  // Telegram
+  const tgs = document.getElementById('tg-status');
+  if(CFG.token && CFG.chats){
+    tgs.textContent='📨 Sending to Telegram…';tgs.className='tg-status';
+    const ok = await sendRoundResult(pct,key,S.roundOk,S.roundNo,S.roundSize,elapsed,S.op,S.diff);
+    tgs.textContent = ok?'✅ Results sent to Telegram!':'❌ Telegram send failed — check settings';
+    tgs.className   = 'tg-status '+(ok?'sent':'err');
+  }else{
+    tgs.textContent='💡 Set up Telegram in ⚙️ Settings';tgs.className='tg-status';
+  }
+}
+
+function newRound(){
+  document.getElementById('overlay').classList.remove('show');
+  S.roundNum++;
+  S.roundOk=0; S.roundNo=0; S.roundIdx=0; S.roundResults=[];
+  S.roundStart=Date.now();
+  setTimeout(renderQ,200);
+}
+
+// ═══════════════════════════════════════════
+// TROPHY CABINET
+// ═══════════════════════════════════════════
+function renderCabinet(){
+  document.getElementById('cg').textContent=T.gold;
+  document.getElementById('cs').textContent=T.silver;
+  document.getElementById('cb').textContent=T.bronze;
+  const hist=document.getElementById('thist');
+  hist.innerHTML='';
+  if(!T.history.length){hist.innerHTML='<div class="tempty">No medals yet — finish a round!</div>';return;}
+  const IC={gold:'🥇',silver:'🥈',bronze:'🥉'};
+  const MC={gold:'g',silver:'s',bronze:'b'};
+  T.history.slice(0,24).forEach(h=>{
+    const sp=document.createElement('span');
+    sp.className='tbadge '+MC[h.medal];
+    sp.innerHTML=`${IC[h.medal]} ${h.pct}% · ${OP_LBL[h.op][0]}·${h.diff[0].toUpperCase()}`;
+    hist.appendChild(sp);
+  });
+}
+
+function clearTrophies(){
+  T={gold:0,silver:0,bronze:0,history:[]};
+  saveAll(); renderCabinet();
+}
+
+// ═══════════════════════════════════════════
+// BURST FX
+// ═══════════════════════════════════════════
+function burstFrom(el,emojis){
+  const r=el.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+  emojis.forEach((e,i)=>{
+    const s=document.createElement('span');s.className='burst';s.textContent=e;
+    s.style.left=cx+'px';s.style.top=cy+'px';
+    const a=(i/emojis.length)*2*Math.PI,d=70+Math.random()*60;
+    s.style.setProperty('--dx',Math.cos(a)*d+'px');
+    s.style.setProperty('--dy',Math.sin(a)*d-35+'px');
+    document.body.appendChild(s);setTimeout(()=>s.remove(),1000);
+  });
+}
+
+function burstCenter(emojis,n){
+  const cx=window.innerWidth/2,cy=window.innerHeight/2;
+  for(let i=0;i<n;i++){
+    const s=document.createElement('span');s.className='burst';s.textContent=emojis[i%emojis.length];
+    s.style.left=cx+'px';s.style.top=cy+'px';
+    s.style.fontSize=(1.4+Math.random()*1.4)+'rem';
+    s.style.animationDelay=(i*60)+'ms';
+    const a=(i/n)*2*Math.PI+Math.random()*.4,d=90+Math.random()*100;
+    s.style.setProperty('--dx',Math.cos(a)*d+'px');
+    s.style.setProperty('--dy',Math.sin(a)*d-50+'px');
+    document.body.appendChild(s);setTimeout(()=>s.remove(),1400);
+  }
+}
+
+// ═══════════════════════════════════════════
+// OP / DIFF CONTROLS
+// ═══════════════════════════════════════════
+document.querySelectorAll('.op-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.op-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    S.op=btn.dataset.op;
+    S.roundOk=0;S.roundNo=0;S.roundIdx=0;S.roundResults=[];S.roundStart=Date.now();
+    renderQ();
+  });
+});
+
+document.querySelectorAll('.diff-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.diff-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    S.diff=btn.dataset.diff;
+    S.roundOk=0;S.roundNo=0;S.roundIdx=0;S.roundResults=[];S.roundStart=Date.now();
+    renderQ();
+  });
+});
+
+function nextQ(){
+  const c=document.getElementById('qcard');
+  c.style.transform='scale(.96)';
+  setTimeout(()=>{c.style.transform='scale(1)';renderQ();},130);
+}
+
+// ═══════════════════════════════════════════
+// PWA INSTALL
+// ═══════════════════════════════════════════
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();deferredPrompt=e;
+  document.getElementById('install-banner').style.display='flex';
+});
+
+function installApp(){
+  if(!deferredPrompt)return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(()=>{
+    deferredPrompt=null;
+    document.getElementById('install-banner').style.display='none';
+  });
+}
+
+window.addEventListener('appinstalled',()=>{
+  document.getElementById('install-banner').style.display='none';
+});
+
+// ═══════════════════════════════════════════
+// SERVICE WORKER
+// ═══════════════════════════════════════════
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+loadAll();
+S.roundSize = parseInt(CFG.roundSize)||10;
+S.roundStart = Date.now();
+renderCabinet();
+renderQ();
+</script>
+</body>
+</html>
